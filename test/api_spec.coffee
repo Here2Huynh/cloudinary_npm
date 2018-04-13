@@ -633,6 +633,28 @@ describe "api", ->
           sinon.assert.calledWith writeSpy, sinon.match(/notification_url=http%3A%2F%2Fexample.com/)
           sinon.assert.calledWith writeSpy, sinon.match(/moderation_status=approved/)
 
+    describe "quality override", ()->
+      xhr = request = requestStub = requestSpy = writeSpy =undefined
+      before ->
+        xhr = sinon.useFakeXMLHttpRequest()
+        writeSpy = sinon.spy(ClientRequest.prototype, 'write')
+        requestSpy = sinon.spy(http, 'request')
+      after ->
+        xhr.restore()
+        writeSpy.restore()
+        requestSpy.restore()
+      qualityValues = ["auto:advanced", "auto:best", "80:420", "none"]
+
+      for quality in qualityValues
+        do (quality) ->
+          it "should support '#{quality}' in update", ()->
+            cloudinary.v2.api.update "sample", "quality_override": quality
+            expected = "quality_override=" + encodeURIComponent(quality)
+            if writeSpy.called
+              sinon.assert.calledWith writeSpy, sinon.match(expected)
+            else
+              sinon.assert.calledWith requestSpy, sinon.match(query: sinon.match(expected))
+
     it "should support setting manual moderation status", (done) ->
       @timeout helper.TIMEOUT_LONG
       cloudinary.v2.uploader.upload IMAGE_FILE, moderation: "manual", (error, upload_result) ->

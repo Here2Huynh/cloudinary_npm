@@ -600,6 +600,29 @@ describe "uploader", ->
         cloudinary.v2.uploader.explicit "cloudinary", type: "twitter_name", eager: [crop: "scale", width: "2.0"], invalidate: true, tags: [TEST_TAG]
         sinon.assert.calledWith(spy, sinon.match((arg)-> arg.toString().match(/name="invalidate"\s*1/)))
 
+  describe ":quality_override", ->
+    spy = undefined
+    xhr = undefined
+    before ->
+      xhr = sinon.useFakeXMLHttpRequest()
+      spy = sinon.spy(ClientRequest.prototype, 'write')
+    after ->
+      spy.restore()
+      xhr.restore()
+
+    qualityValues = ["auto:advanced", "auto:best", "80:420", "none"]
+    for quality in qualityValues
+      do (quality) ->
+        it "should pass '#{quality}'", ()->
+          cloudinary.v2.uploader.upload IMAGE_FILE, "quality_override": quality
+          expected = new RegExp("name=\"quality_override\"\\s*#{quality}")
+          sinon.assert.calledWithMatch spy, (arg)-> arg.toString().match(expected)
+
+    it "should be supported by explicit api", ()->
+      cloudinary.v2.uploader.explicit "cloudinary", "quality_override": "auto:best"
+      expected = new RegExp("name=\"quality_override\"\\s*auto:best")
+      sinon.assert.calledWithMatch spy, (arg)-> arg.toString().match(expected)
+
   it "should create an image upload tag with required properties", () ->
     @timeout helper.TIMEOUT_LONG
     tag = cloudinary.v2.uploader.image_upload_tag "image_id", chunk_size: "1234"
